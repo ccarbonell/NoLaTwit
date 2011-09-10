@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -43,15 +44,28 @@ public class NLPTwitterToolbox {
 
 		if (args == null || args.length == 0) {
 			System.out
-					.println("ERROR: Please specify a twitter4j.properties file.\n");
+					.println("ERROR: Please specify at least one twitter4j.properties file.\n");
 			return;
 		}
+		
+		for (String propfile : args) {
+			serviceAccount(propfile);
+		}
 
-		File properties = new File(args[0]);
+	}
+
+	/**
+	 * Takes the name of a twitter4j.prop file and performs on the account for that property file:
+	 * > follow back new users that have mentioned us recently.
+	 * > follow friday (if it's a friday)
+	 * @param propfile
+	 */
+	public static void serviceAccount(String propfile) {
+		File properties = new File(propfile);
 
 		if (!properties.exists() || !properties.isFile()
 				|| !properties.canRead()) {
-			System.out.println("ERROR: " + args[0]
+			System.out.println("ERROR: " + propfile
 					+ " is not a valid twitter4j.propertis file.\n");
 		}
 
@@ -68,12 +82,19 @@ public class NLPTwitterToolbox {
 
 		// Follow back those that mentioned you, if you're not following them
 		// already
-		// toolbox.followNewUsers(statuses);
-
+		toolbox.followNewUsers(statuses);
 		toolbox.sendFollowFridayRecommendations(statuses);
 	}
 
 	private void sendFollowFridayRecommendations(List<Status> statuses) {
+		
+		if (Calendar.getInstance().get(Calendar.DAY_OF_WEEK) != Calendar.FRIDAY) {
+			System.out.println("No #FF today.");
+			return;
+		} else {
+			System.out.println("TGI Friday!!!");
+		}
+		
 		//TODO: Copy this code to generalize this pattern.
 		//We're basically converting a list with repeated objects
 		//into a sorted set based on the number of appearances. (histogram)
