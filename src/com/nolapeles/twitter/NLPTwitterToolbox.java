@@ -103,8 +103,7 @@ public class NLPTwitterToolbox {
 			Long friendId = iterator.next();
 			
 			try {
-				ResponseList<Status> userTimeline = twitter.getUserTimeline(friendId);
-	
+
 				//unfollow inactive, get user out of FRIENDS.
 				User friend = twitter.showUser(friendId);
 				if (friend.getStatus().getCreatedAt().before(threeMonthsAgo.getTime())) {
