@@ -12,12 +12,14 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
 import twitter4j.IDs;
+import twitter4j.ResponseList;
 import twitter4j.Status;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
@@ -82,8 +84,42 @@ public class NLPTwitterToolbox {
 
 		// Follow back those that mentioned you, if you're not following them
 		// already
+		toolbox.unfollowInactive();
 		toolbox.followNewUsers(statuses);
 		toolbox.sendFollowFridayRecommendations(statuses);
+	}
+	
+	/**
+	 * Unfollow users that have been inactive for 3 months.
+	 */
+	private void unfollowInactive() {
+		Iterator<Long> iterator = FRIENDS.iterator();
+		
+		Calendar threeMonthsAgo = Calendar.getInstance();
+		threeMonthsAgo.add(Calendar.MONTH, -3);
+
+		
+		while (iterator.hasNext()) {
+			Long friendId = iterator.next();
+			
+			try {
+				ResponseList<Status> userTimeline = twitter.getUserTimeline(friendId);
+	
+				//unfollow inactive, get user out of FRIENDS.
+				User friend = twitter.showUser(friendId);
+				if (friend.getStatus().getCreatedAt().before(threeMonthsAgo.getTime())) {
+					twitter.destroyFriendship(friendId);
+					iterator.remove();
+					System.out.println("@"+ SCREEN_NAME+ " unfollows inactive @" + friend.getScreenName() + " Last Tweet was on ["+friend.getStatus().getCreatedAt()+"]");
+				} else {
+					System.out.println("Keeping @" + friend.getScreenName() + " for @" + SCREEN_NAME);
+				}
+			} catch (Exception e) {
+				
+			}
+		}
+		
+		saveFriends();
 	}
 
 	private void sendFollowFridayRecommendations(List<Status> statuses) {
@@ -220,7 +256,7 @@ public class NLPTwitterToolbox {
 			try {
 				oos.flush();
 				oos.close();
-				System.out.println("Saved " + FRIENDS.size() + " friends");
+				System.out.println("Saved " + FRIENDS.size() + " friends for @" + SCREEN_NAME);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
