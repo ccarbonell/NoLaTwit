@@ -19,7 +19,6 @@ import java.util.Properties;
 import java.util.Set;
 
 import twitter4j.IDs;
-import twitter4j.ResponseList;
 import twitter4j.Status;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
@@ -37,10 +36,22 @@ public class NLPTwitterToolbox {
 	private static final int MAX_TWEET_LENGTH = 140;
 	private static String SCREEN_NAME;
 	private Twitter twitter;
+	
 	private Set<Long> FRIENDS;
+	private Map<Long,User> STATUSES;
+	
 	private long loadFriendCursor;
-	private File fFriends;
+
+	/** The property files we pass to the program are stored here. */
 	private Properties props;
+
+	/** The file where we serialize the IDs of the people we follow */
+	private File fFriends;
+	
+	/** The file where we serialize known friend statuses so we don't have to request these statuses
+	 *  during the next 3 months.
+	 */
+	private File fStatuses;
 
 	public static void main(String[] args) {
 
@@ -108,7 +119,8 @@ public class NLPTwitterToolbox {
 				//TODO: Save statuses here. Whenever the saved status is too old, then we check again
 				//to update and see if it's worth it not following this guy, otherwise, if we know he's
 				//been active, we don't need to get the latest status.
-				User friend = twitter.showUser(friendId);
+				User friend = getUser(friendId);
+				
 				if (friend.getStatus().getCreatedAt().before(threeMonthsAgo.getTime())) {
 					twitter.destroyFriendship(friendId);
 					iterator.remove();
@@ -122,6 +134,32 @@ public class NLPTwitterToolbox {
 		}
 		
 		saveFriends();
+	}
+
+	private User getUser(Long friendId) throws TwitterException {
+		User user = STATUSES.get(friendId);
+		
+		Calendar threeMonthsAgo = Calendar.getInstance();
+		threeMonthsAgo.add(Calendar.MONTH, -3);
+		
+		if (user != null && user.getStatus().getCreatedAt().after(threeMonthsAgo.getTime())) {
+			System.out.println("Got user @" + user.getScreenName() + " from disk.");
+			return user;
+		}
+		
+		// last resort, ask twitter about this guy.
+		user = twitter.showUser(friendId);
+		STATUSES.put(friendId, user);
+
+		/**
+		 * Possible Disk Bottle Neck, fix it when it happens. 
+		 * Doing this now to ensure we keep user statuses even if the program
+		 * stops during a run, so we don't have to use another twitter request
+		 * for the same data on the next run.
+		 */
+		saveStatuses();
+		
+		return user;
 	}
 
 	private void sendFollowFridayRecommendations(List<Status> statuses) {
@@ -196,6 +234,7 @@ public class NLPTwitterToolbox {
 		}
 
 		initFriends();
+		initStatuses();
 	}
 
 	private void loadProperties(File propertyFile) throws Exception {
@@ -213,6 +252,48 @@ public class NLPTwitterToolbox {
 						+ "' property on property file - "
 						+ propertyFile.getAbsolutePath());
 			}
+		}
+	}
+	
+	private void initStatuses() {
+		fStatuses = new File(SCREEN_NAME + ".statuses.dat");
+		loadStatuses();
+	}
+
+	/** This will load the statuses from disk */
+	@SuppressWarnings("unchecked")
+	private void loadStatuses() {
+		if (!fStatuses.exists() || fStatuses.length() == 0) {
+			STATUSES = new HashMap<Long, User>();
+		} else {
+			try {
+				FileInputStream fis = new FileInputStream(fStatuses);
+				ObjectInputStream ois = new ObjectInputStream(fis);
+				STATUSES = (HashMap<Long,User>) ois.readObject();
+			} catch (Exception e) {
+				e.printStackTrace();
+				return;
+			}
+		}
+	}
+	
+	private void saveStatuses() {
+		ObjectOutputStream oos = null;
+		FileOutputStream fos = null;
+		try {
+			fos = new FileOutputStream(fStatuses);
+			oos = new ObjectOutputStream(fos);
+			
+			try {
+				oos.writeObject(STATUSES);
+				oos.flush();
+				oos.close();
+				//System.out.println("Saved " + STATUSES.size() + " user statuses for @" + SCREEN_NAME);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} catch (Exception e) {
+
 		}
 	}
 
@@ -245,6 +326,7 @@ public class NLPTwitterToolbox {
 		}
 	}
 
+	/** Serializes the Twitter IDs of friends into a file. */
 	private void saveFriends() {
 		ObjectOutputStream oos = null;
 		FileOutputStream fos = null;
@@ -289,11 +371,6 @@ public class NLPTwitterToolbox {
 	}
 
 	private void initTwitter() throws TwitterException {
-		// do #FF method. Prints out as many tweets as necessary taking into
-		// consideration
-		// mentions, RTs, favorites.
-		// start putting all users found on a List<String, Integer>
-		// add points for RTs(3), mentions (2) and favs(1)
 		Configuration configuration = new ConfigurationBuilder()
 				.setOAuthConsumerKey(props.getProperty("oauth.consumerKey"))
 				.setOAuthConsumerSecret(
@@ -318,6 +395,7 @@ public class NLPTwitterToolbox {
 
 			if (!FRIENDS.contains(userid = status.getUser().getId())) {
 				try {
+					System.out.println("Following @" + status.getUser().getScreenName());
 					twitter.createFriendship(userid, true);
 					FRIENDS.add(userid);
 				} catch (TwitterException e) {
