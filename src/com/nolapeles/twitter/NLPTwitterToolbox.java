@@ -105,6 +105,9 @@ public class NLPTwitterToolbox {
 			try {
 
 				//unfollow inactive, get user out of FRIENDS.
+				//TODO: Save statuses here. Whenever the saved status is too old, then we check again
+				//to update and see if it's worth it not following this guy, otherwise, if we know he's
+				//been active, we don't need to get the latest status.
 				User friend = twitter.showUser(friendId);
 				if (friend.getStatus().getCreatedAt().before(threeMonthsAgo.getTime())) {
 					twitter.destroyFriendship(friendId);
