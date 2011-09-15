@@ -124,6 +124,10 @@ public class NLPTwitterToolbox {
 				if (friend.getStatus().getCreatedAt().before(threeMonthsAgo.getTime())) {
 					twitter.destroyFriendship(friendId);
 					iterator.remove();
+					
+					STATUSES.remove(friend.getId());
+					saveStatuses();
+					
 					System.out.println("@"+ SCREEN_NAME+ " unfollows inactive @" + friend.getScreenName() + " Last Tweet was on ["+friend.getStatus().getCreatedAt()+"]");
 				} else {
 					System.out.println("Keeping @" + friend.getScreenName() + " for @" + SCREEN_NAME);
