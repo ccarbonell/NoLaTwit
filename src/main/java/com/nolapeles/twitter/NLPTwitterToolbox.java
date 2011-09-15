@@ -130,7 +130,7 @@ public class NLPTwitterToolbox {
 					System.out.println("Keeping @" + friend.getScreenName() + " for @" + SCREEN_NAME);
 				}
 			} catch (Exception e) {
-				
+				e.printStackTrace();
 			}
 		}
 		
@@ -139,8 +139,10 @@ public class NLPTwitterToolbox {
 
 	private void unfollow(User friend) throws TwitterException {
 		twitter.destroyFriendship(friend.getId());
+		FRIENDS.remove(friend.getId());
 		STATUSES.remove(friend.getId());
 		saveStatuses();
+		saveFriends();
 	}
 
 	private User getUser(Long friendId) throws TwitterException {
@@ -390,7 +392,7 @@ public class NLPTwitterToolbox {
 		twitter.verifyCredentials();
 	}
 
-	@SuppressWarnings("unused")
+
 	private void followNewUsers(List<Status> statuses) {
 		for (Status status : statuses) {
 			long userid;
