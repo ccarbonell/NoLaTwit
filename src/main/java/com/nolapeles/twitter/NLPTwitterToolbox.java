@@ -122,11 +122,8 @@ public class NLPTwitterToolbox {
 				User friend = getUser(friendId);
 				
 				if (friend.getStatus().getCreatedAt().before(threeMonthsAgo.getTime())) {
-					twitter.destroyFriendship(friendId);
 					iterator.remove();
-					
-					STATUSES.remove(friend.getId());
-					saveStatuses();
+					unfollow(friend);
 					
 					System.out.println("@"+ SCREEN_NAME+ " unfollows inactive @" + friend.getScreenName() + " Last Tweet was on ["+friend.getStatus().getCreatedAt()+"]");
 				} else {
@@ -138,6 +135,12 @@ public class NLPTwitterToolbox {
 		}
 		
 		saveFriends();
+	}
+
+	private void unfollow(User friend) throws TwitterException {
+		twitter.destroyFriendship(friend.getId());
+		STATUSES.remove(friend.getId());
+		saveStatuses();
 	}
 
 	private User getUser(Long friendId) throws TwitterException {
