@@ -17,8 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import twitter4j.IDs;
 import twitter4j.Status;
@@ -39,7 +37,7 @@ public class NLPTwitterToolbox {
 	private String SCREEN_NAME;
 	private Twitter twitter;
 	
-	private boolean FOLLOW_FRIDAY_ON = false;
+	private boolean FOLLOW_FRIDAY_ON;
 	
 	private Set<Long> FRIENDS;
 	private Map<Long,User> STATUSES;
@@ -264,7 +262,8 @@ public class NLPTwitterToolbox {
 	private void loadProperties(File propertyFile) throws Exception {
 		String[] expectedPropertyKeys = new String[] { "debug",
 				"oauth.consumerKey", "oauth.consumerSecret",
-				"oauth.accessToken", "oauth.accessTokenSecret", "username" };
+				"oauth.accessToken", "oauth.accessTokenSecret", 
+				"username", "followFriday" };
 
 		props = new Properties();
 		props.load(new FileInputStream(propertyFile));
@@ -277,6 +276,11 @@ public class NLPTwitterToolbox {
 						+ propertyFile.getAbsolutePath());
 			}
 		}
+		
+		SCREEN_NAME = props.getProperty("username");
+		
+		String strFFProp = props.getProperty("followFriday").trim().toLowerCase();
+		FOLLOW_FRIDAY_ON = (strFFProp.equals("1") || strFFProp.equals("true") || strFFProp.equals("on"));
 	}
 	
 	private void initStatuses() {
@@ -323,7 +327,6 @@ public class NLPTwitterToolbox {
 
 	private void initFriends() {
 		FRIENDS = new HashSet<Long>();
-		SCREEN_NAME = props.getProperty("username");
 		fFriends = new File(SCREEN_NAME + ".friends.txt");
 		loadFriends();
 	}
