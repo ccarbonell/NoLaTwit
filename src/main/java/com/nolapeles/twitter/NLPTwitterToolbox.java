@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import twitter4j.IDs;
 import twitter4j.Status;
@@ -34,7 +36,7 @@ import twitter4j.conf.ConfigurationBuilder;
  **/
 public class NLPTwitterToolbox {
 	private static final int MAX_TWEET_LENGTH = 140;
-	private static String SCREEN_NAME;
+	private String SCREEN_NAME;
 	private Twitter twitter;
 	
 	private Set<Long> FRIENDS;
@@ -61,9 +63,20 @@ public class NLPTwitterToolbox {
 			return;
 		}
 		
-		for (String propfile : args) {
-			serviceAccount(propfile);
+		ExecutorService threadPool= Executors.newFixedThreadPool(args.length);
+		
+		for (final String propfile : args) {
+			threadPool.execute(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						serviceAccount(propfile);
+					} catch (Exception e) {}
+				}
+			});			
 		}
+		
+		threadPool.shutdown();
 
 	}
 
