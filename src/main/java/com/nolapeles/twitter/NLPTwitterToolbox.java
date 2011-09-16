@@ -39,6 +39,8 @@ public class NLPTwitterToolbox {
 	private String SCREEN_NAME;
 	private Twitter twitter;
 	
+	private boolean FOLLOW_FRIDAY_ON = false;
+	
 	private Set<Long> FRIENDS;
 	private Map<Long,User> STATUSES;
 	
@@ -63,20 +65,16 @@ public class NLPTwitterToolbox {
 			return;
 		}
 		
-		ExecutorService threadPool= Executors.newFixedThreadPool(args.length);
-		
 		for (final String propfile : args) {
-			threadPool.execute(new Runnable() {
+			new Thread(new Runnable() {
 				@Override
 				public void run() {
 					try {
 						serviceAccount(propfile);
 					} catch (Exception e) {}
 				}
-			});			
+			}).start();			
 		}
-		
-		threadPool.shutdown();
 
 	}
 
@@ -185,6 +183,10 @@ public class NLPTwitterToolbox {
 	}
 
 	private void sendFollowFridayRecommendations(List<Status> statuses) {
+		
+		if (!FOLLOW_FRIDAY_ON) {
+			return;
+		}
 		
 		if (Calendar.getInstance().get(Calendar.DAY_OF_WEEK) != Calendar.FRIDAY) {
 			System.out.println("No #FF today.");
