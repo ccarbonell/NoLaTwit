@@ -64,14 +64,19 @@ public class NLPTwitterToolbox {
 		}
 		
 		for (final String propfile : args) {
-			new Thread(new Runnable() {
-				@Override
-				public void run() {
-					try {
-						serviceAccount(propfile);
-					} catch (Exception e) {}
-				}
-			}).start();			
+			try {
+				new Thread(new Runnable() {
+					@Override
+					public void run() {
+						try {
+							serviceAccount(propfile);
+						} catch (Exception e) {
+						}
+					}
+				}).start();
+			} catch (Exception e) {
+				continue;
+			}
 		}
 
 	}
@@ -82,7 +87,7 @@ public class NLPTwitterToolbox {
 	 * > follow friday (if it's a friday)
 	 * @param propfile
 	 */
-	public static void serviceAccount(String propfile) {
+	public static void serviceAccount(String propfile) throws Exception {
 		File properties = new File(propfile);
 
 		if (!properties.exists() || !properties.isFile()
@@ -139,6 +144,10 @@ public class NLPTwitterToolbox {
 					System.out.println("Keeping @" + friend.getScreenName() + " for @" + SCREEN_NAME);
 				}
 			} catch (Exception e) {
+				try {
+					unfollow(friendId);
+				} catch (TwitterException e1) {
+				}
 				e.printStackTrace();
 			}
 		}
@@ -147,9 +156,13 @@ public class NLPTwitterToolbox {
 	}
 
 	private void unfollow(User friend) throws TwitterException {
-		twitter.destroyFriendship(friend.getId());
-		FRIENDS.remove(friend.getId());
-		STATUSES.remove(friend.getId());
+		unfollow(friend.getId());
+	}
+	
+	private void unfollow(long id) throws TwitterException {
+		twitter.destroyFriendship(id);
+		FRIENDS.remove(id);
+		STATUSES.remove(id);
 		saveStatuses();
 		saveFriends();
 	}
@@ -422,7 +435,7 @@ public class NLPTwitterToolbox {
 
 			if (!FRIENDS.contains(userid = status.getUser().getId())) {
 				try {
-					System.out.println("Following @" + status.getUser().getScreenName());
+					System.out.println(SCREEN_NAME + " is Following @" + status.getUser().getScreenName());
 					twitter.createFriendship(userid, true);
 					FRIENDS.add(userid);
 				} catch (TwitterException e) {
