@@ -135,7 +135,9 @@ public class NLPTwitterToolbox {
 				//been active, we don't need to get the latest status.
 				User friend = getUser(friendId);
 				
-				if (friend.getStatus().getCreatedAt().before(threeMonthsAgo.getTime())) {
+				if (friend != null &&
+					friend.getStatus() != null && 
+					friend.getStatus().getCreatedAt().before(threeMonthsAgo.getTime())) {
 					iterator.remove();
 					unfollow(friend);
 					
@@ -173,13 +175,20 @@ public class NLPTwitterToolbox {
 		Calendar threeMonthsAgo = Calendar.getInstance();
 		threeMonthsAgo.add(Calendar.MONTH, -3);
 		
-		if (user != null && user.getStatus().getCreatedAt().after(threeMonthsAgo.getTime())) {
+		if (user != null && 
+			user.getStatus() != null &&
+			user.getStatus().getCreatedAt().after(threeMonthsAgo.getTime())) {
 			System.out.println("Got user @" + user.getScreenName() + " from disk.");
 			return user;
 		}
 		
 		// last resort, ask twitter about this guy.
-		user = twitter.showUser(friendId);
+		try {
+			user = twitter.showUser(friendId);
+		} catch (TwitterException e) {
+			return null;
+		}
+		
 		STATUSES.put(friendId, user);
 
 		/**
