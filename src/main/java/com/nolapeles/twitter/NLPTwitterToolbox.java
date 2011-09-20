@@ -142,7 +142,7 @@ public class NLPTwitterToolbox {
 					unfollow(friend);
 					
 					System.out.println("@"+ SCREEN_NAME+ " unfollows inactive @" + friend.getScreenName() + " Last Tweet was on ["+friend.getStatus().getCreatedAt()+"]");
-				} else {
+				} else if (friend != null) {
 					System.out.println("Keeping @" + friend.getScreenName() + " for @" + SCREEN_NAME);
 				}
 			} catch (Exception e) {
