@@ -143,7 +143,7 @@ public class NLPTwitterToolbox {
 					
 					System.out.println("@"+ SCREEN_NAME+ " unfollows inactive @" + friend.getScreenName() + " Last Tweet was on ["+friend.getStatus().getCreatedAt()+"]");
 				} else if (friend != null) {
-					System.out.println("Keeping @" + friend.getScreenName() + " for @" + SCREEN_NAME);
+					//System.out.println("Keeping @" + friend.getScreenName() + " for @" + SCREEN_NAME);
 				}
 			} catch (Exception e) {
 				try {
@@ -178,7 +178,7 @@ public class NLPTwitterToolbox {
 		if (user != null && 
 			user.getStatus() != null &&
 			user.getStatus().getCreatedAt().after(threeMonthsAgo.getTime())) {
-			System.out.println("Got user @" + user.getScreenName() + " from disk.");
+			//System.out.println("Got user @" + user.getScreenName() + " from disk.");
 			return user;
 		}
 		
