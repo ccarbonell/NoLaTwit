@@ -71,6 +71,7 @@ public class NLPTwitterToolbox {
 						try {
 							serviceAccount(propfile);
 						} catch (Exception e) {
+						    System.out.println("Failed servicing account " + propfile);
 						}
 					}
 				}).start();
@@ -205,15 +206,11 @@ public class NLPTwitterToolbox {
 	private void sendFollowFridayRecommendations(List<Status> statuses) {
 		
 		if (!FOLLOW_FRIDAY_ON) {
+			System.out.println("Follow friday turned off for " + SCREEN_NAME);
 			return;
 		}
 		
-		if (Calendar.getInstance().get(Calendar.DAY_OF_WEEK) != Calendar.FRIDAY) {
-			System.out.println("No #FF today.");
-			return;
-		} else {
-			System.out.println("TGI Friday!!!");
-		}
+		boolean isFriday = Calendar.getInstance().get(Calendar.DAY_OF_WEEK) != Calendar.FRIDAY;
 		
 		//TODO: Copy this code to generalize this pattern.
 		//We're basically converting a list with repeated objects
@@ -241,7 +238,7 @@ public class NLPTwitterToolbox {
 
 		//Now start preparing the twitts with the users, recommend the best ones first.
 		List<String> tweets = new ArrayList<String>();
-		StringBuilder tempTweet = new StringBuilder("#FF");
+		StringBuilder tempTweet = new StringBuilder((isFriday) ? "#FF" : "S/O to");
 		for (User user : usersToRecommend) {
 			if ((tempTweet.length() + user.getScreenName().length() + " @".length()) <= MAX_TWEET_LENGTH) {
 				tempTweet.append(" @" + user.getScreenName());
@@ -321,6 +318,7 @@ public class NLPTwitterToolbox {
 				ObjectInputStream ois = new ObjectInputStream(fis);
 				STATUSES = (HashMap<Long,User>) ois.readObject();
 			} catch (Exception e) {
+			    System.out.println(fStatuses);
 				e.printStackTrace();
 				return;
 			}
@@ -429,6 +427,7 @@ public class NLPTwitterToolbox {
 						props.getProperty("oauth.accessTokenSecret")).build();
 
 		twitter = new TwitterFactory(configuration).getInstance();
+		System.out.println("Verifying credentials for " + props.getProperty("username"));
 		twitter.verifyCredentials();
 	}
 
