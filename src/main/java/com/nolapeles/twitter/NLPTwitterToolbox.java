@@ -112,7 +112,7 @@ public class NLPTwitterToolbox {
 		// already
 		toolbox.unfollowInactive();
 		toolbox.followNewUsers(statuses);
-		toolbox.sendFollowFridayRecommendations(statuses);
+		toolbox.sendShoutout(statuses);
 	}
 	
 	/**
@@ -203,14 +203,14 @@ public class NLPTwitterToolbox {
 		return user;
 	}
 
-	private void sendFollowFridayRecommendations(List<Status> statuses) {
+	private void sendShoutout(List<Status> statuses) {
 		
 		if (!FOLLOW_FRIDAY_ON) {
 			System.out.println("Follow friday turned off for " + SCREEN_NAME);
 			return;
 		}
 		
-		boolean isFriday = Calendar.getInstance().get(Calendar.DAY_OF_WEEK) != Calendar.FRIDAY;
+		boolean isFriday = Calendar.getInstance().get(Calendar.DAY_OF_WEEK) == Calendar.FRIDAY;
 		
 		//TODO: Copy this code to generalize this pattern.
 		//We're basically converting a list with repeated objects
@@ -238,27 +238,31 @@ public class NLPTwitterToolbox {
 
 		//Now start preparing the twitts with the users, recommend the best ones first.
 		List<String> tweets = new ArrayList<String>();
-		StringBuilder tempTweet = new StringBuilder((isFriday) ? "#FF" : "S/O to");
+		
+		String shoutoutString = (isFriday) ? "#FF" : "S/O to";
+		
+		StringBuilder tempTweet = new StringBuilder(shoutoutString);
 		for (User user : usersToRecommend) {
 			if ((tempTweet.length() + user.getScreenName().length() + " @".length()) <= MAX_TWEET_LENGTH) {
 				tempTweet.append(" @" + user.getScreenName());
 			} else {
 				tweets.add(tempTweet.toString());
-				tempTweet = new StringBuilder("#FF");
+				tempTweet = new StringBuilder(shoutoutString);
 			}
 		}
 
 		//sometimes there's material for only one tweet.
 		String possibleShortRecommendation = tempTweet.toString();
-		if (!possibleShortRecommendation.equals("#FF")) {
+		if (!possibleShortRecommendation.equals(shoutoutString)) {
 			tweets.add(possibleShortRecommendation);
 		}
 
 		//Tweet away!
 		for (String tweet : tweets) {
 			try {
+			    //System.out.println("Will send: " + tweet);
 				twitter.updateStatus(tweet);
-			} catch (TwitterException e) {
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
