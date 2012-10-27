@@ -99,11 +99,6 @@ public class NLPTwitterToolbox {
 
         NLPTwitterToolbox toolbox = new NLPTwitterToolbox(properties);
         
-        if (propfile.equals("twitter4j.properties.punsr")) {
-            toolbox.followUEDPlayers();
-            return;
-        }
-
         // get all the latest mentions to us, and let's play with this.
         List<Status> statuses = null;
         try {
@@ -118,7 +113,9 @@ public class NLPTwitterToolbox {
         toolbox.unfollowInactive();
         toolbox.followNewUsers(statuses);
         toolbox.sendShoutout(statuses);
-        
+        if (propfile.equals("twitter4j.properties.punsr")) {
+            toolbox.followUEDPlayers();
+        }
        
     }
 
@@ -126,10 +123,11 @@ public class NLPTwitterToolbox {
         try {
             List<Tweet> tweets = new ArrayList<Tweet>();
             Query q = new Query("#ued");
+            q.setSinceId(0);
             q.setResultType(Query.RECENT);
             q.setRpp(100);
             
-            for (int page=0; page < 15; page++) {
+            for (int page=1; page < 15; page++) {
                 q.setPage(page);
                 QueryResult result = twitter.search(q);
                 List<Tweet> tweets2 = result.getTweets();
@@ -143,6 +141,7 @@ public class NLPTwitterToolbox {
                         System.out.println(SCREEN_NAME + " is Following #ued player @" + t.getFromUser());
                         twitter.createFriendship(userid, true);
                         FRIENDS.add(userid);
+                        saveFriends();
                     } catch (TwitterException e) {
                     }
                 }
