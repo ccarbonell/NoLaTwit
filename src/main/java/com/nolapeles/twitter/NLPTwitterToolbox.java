@@ -19,10 +19,8 @@ import java.util.Properties;
 import java.util.Set;
 
 import twitter4j.IDs;
-import twitter4j.Query;
-import twitter4j.QueryResult;
+import twitter4j.Paging;
 import twitter4j.Status;
-import twitter4j.Tweet;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
@@ -113,25 +111,35 @@ public class NLPTwitterToolbox {
         toolbox.unfollowInactive();
         toolbox.followNewUsers(statuses);
         toolbox.sendShoutout(statuses);
+        
+        /**
         if (propfile.equals("twitter4j.properties.punsr")) {
             toolbox.followUEDPlayers();
         }
+        */
        
     }
 
+    /**
     private void followUEDPlayers() {
+        if (true) {
+            return; 
+        }
         try {
-            List<Tweet> tweets = new ArrayList<Tweet>();
+            List<StatusUpdate> tweets = new ArrayList<StatusUpdate>();
             Query q = new Query("#ued");
             q.setSinceId(0);
             q.setResultType(Query.RECENT);
-            q.setRpp(100);
+            q.setCount(100);
+            q.setSince(since);
+            
             
             for (int page=1; page < 15; page++) {
                 q.setPage(page);
                 QueryResult result = twitter.search(q);
                 List<Tweet> tweets2 = result.getTweets();
                 tweets.addAll(tweets2);
+                result.getSinceId()
             }
 
             for (Tweet t : tweets) {
@@ -153,6 +161,7 @@ public class NLPTwitterToolbox {
         }
         
     }
+    */
 
     /**
      * Unfollow users that have been inactive for 3 months.
@@ -480,7 +489,9 @@ public class NLPTwitterToolbox {
     }
 
     private List<Status> getMentions() throws TwitterException {
-        List<Status> statuses = twitter.getMentions();
+        Paging paging = new Paging();
+        paging.setCount(100);
+        List<Status> statuses = twitter.getMentionsTimeline(paging);
         return statuses;
     }
 }
