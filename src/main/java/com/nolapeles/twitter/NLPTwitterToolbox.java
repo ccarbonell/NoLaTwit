@@ -1,32 +1,11 @@
 package com.nolapeles.twitter;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-
-import twitter4j.IDs;
-import twitter4j.Paging;
-import twitter4j.Status;
-import twitter4j.Twitter;
-import twitter4j.TwitterException;
-import twitter4j.TwitterFactory;
-import twitter4j.User;
+import twitter4j.*;
 import twitter4j.conf.Configuration;
 import twitter4j.conf.ConfigurationBuilder;
+
+import java.io.*;
+import java.util.*;
 
 /**
  * This class has several utilities to automate tasks related to your followers.
@@ -66,7 +45,6 @@ public class NLPTwitterToolbox {
         for (final String propfile : args) {
             try {
                 new Thread(new Runnable() {
-                    @Override
                     public void run() {
                         try {
                             serviceAccount(propfile);
@@ -273,7 +251,6 @@ public class NLPTwitterToolbox {
         }
 
         Collections.sort(usersToRecommend, new Comparator<User>() {
-            @Override
             public int compare(User u1, User u2) {
                 return userInteractions.get(u2) - userInteractions.get(u1);
             }
@@ -312,7 +289,11 @@ public class NLPTwitterToolbox {
 
     }
 
-    public NLPTwitterToolbox(File propertyFile) {
+    NLPTwitterToolbox(File propertyFile) {
+        this(propertyFile, false, false);
+    }
+
+    NLPTwitterToolbox(File propertyFile, boolean initFriends, boolean initStatuses) {
         try {
             loadProperties(propertyFile);
             initTwitter();
@@ -321,8 +302,13 @@ public class NLPTwitterToolbox {
             System.exit(1);
         }
 
-        initFriends();
-        initStatuses();
+        if (initFriends) {
+            initFriends();
+        }
+
+        if (initStatuses) {
+            initStatuses();
+        }
     }
 
     private void loadProperties(File propertyFile) throws Exception {
@@ -359,6 +345,7 @@ public class NLPTwitterToolbox {
                 FileInputStream fis = new FileInputStream(fStatuses);
                 ObjectInputStream ois = new ObjectInputStream(fis);
                 STATUSES = (HashMap<Long, User>) ois.readObject();
+                ois.close();
             } catch (Exception e) {
                 System.out.println(fStatuses + " !!!");
                 e.printStackTrace();
@@ -493,5 +480,54 @@ public class NLPTwitterToolbox {
         paging.setCount(100);
         List<Status> statuses = twitter.getMentionsTimeline(paging);
         return statuses;
+    }
+
+    List<Status> findTweets(String... orKeywords) {
+        if (orKeywords == null || orKeywords.length == 0) {
+            return new ArrayList<Status>();
+        }
+        List<Status> tweets = new ArrayList<Status>();
+        try {
+            int page = 1;
+            while (page < 40) {
+                final ResponseList<Status> userTimeline = twitter.getUserTimeline(new Paging(page++, 100));
+                System.out.println("timeline contained " + userTimeline.size() + " statuses");
+                for (Status s : userTimeline) {
+                    if (anyKeyWordIn(s.getText(), orKeywords)) {
+                        System.out.println("Adding -> " + s.getText());
+                        tweets.add(s);
+                    }
+                }
+            }
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+        return tweets;
+    }
+
+    private boolean anyKeyWordIn(String text, String[] orKeywords) {
+        String textLower = text.toLowerCase();
+        for (String keyword : orKeywords) {
+            if (textLower.contains(keyword.toLowerCase())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void deleteTweets(List<Status> statuses) {
+        if (statuses == null || statuses.size() == 0) {
+            return;
+        }
+        int i=1;
+        for (Status status : statuses) {
+            try {
+                twitter.destroyStatus(status.getId());
+                System.out.println("Destroyed("+i+"): ["+status.getId()+"] " + status.getText());
+                i++;
+            } catch (TwitterException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
