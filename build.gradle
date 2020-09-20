@@ -1,0 +1,25 @@
+group 'com.nolapeles'
+version '1.0-SNAPSHOT'
+
+apply plugin: 'java'
+
+sourceCompatibility = JavaVersion.VERSION_12
+targetCompatibility = JavaVersion.VERSION_12
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile "org.twitter4j:twitter4j-core:4.0.7"
+}
+
+//mainClassName = 'com.nolapeles.twitter.NLPTwitterToolbox'
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src/main/java'
+        }
+    }
+}

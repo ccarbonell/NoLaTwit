@@ -42,22 +42,33 @@ public class NLPTwitterToolbox {
             return;
         }
 
+        final Thread[] threads = new Thread[args.length];
+        int i=0;
         for (final String propfile : args) {
             try {
-                new Thread(new Runnable() {
-                    public void run() {
-                        try {
-                            serviceAccount(propfile);
-                        } catch (Exception e) {
-                            System.out.println("Failed servicing account " + propfile);
-                        }
+                threads[i] = new Thread(() -> {
+                    try {
+                        serviceAccount(propfile);
+                    } catch (Exception e) {
+                        System.out.println("Failed servicing account " + propfile);
+                        e.printStackTrace();
                     }
-                }).start();
+                });
+                threads[i].start();
+                i++;
             } catch (Exception e) {
                 continue;
             }
         }
 
+        for (Thread t : threads) {
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        System.out.println("Waiting for all threads to finish.");
     }
 
     /**
@@ -290,7 +301,7 @@ public class NLPTwitterToolbox {
     }
 
     NLPTwitterToolbox(File propertyFile) {
-        this(propertyFile, false, false);
+        this(propertyFile, true, true);
     }
 
     NLPTwitterToolbox(File propertyFile, boolean initFriends, boolean initStatuses) {
@@ -339,7 +350,7 @@ public class NLPTwitterToolbox {
     @SuppressWarnings("unchecked")
     private void loadStatuses() {
         if (!fStatuses.exists() || fStatuses.length() == 0) {
-            STATUSES = new HashMap<Long, User>();
+            STATUSES = new HashMap<>();
         } else {
             try {
                 FileInputStream fis = new FileInputStream(fStatuses);
@@ -347,6 +358,7 @@ public class NLPTwitterToolbox {
                 STATUSES = (HashMap<Long, User>) ois.readObject();
                 ois.close();
             } catch (Exception e) {
+                STATUSES = new HashMap<>();
                 System.out.println(fStatuses + " !!!");
                 e.printStackTrace();
                 return;
@@ -488,8 +500,8 @@ public class NLPTwitterToolbox {
         }
         List<Status> tweets = new ArrayList<Status>();
         try {
-            int page = 1;
-            while (page < 40) {
+            int page = 150;
+            while (page < 200) {
                 final ResponseList<Status> userTimeline = twitter.getUserTimeline(new Paging(page++, 100));
                 System.out.println("timeline contained " + userTimeline.size() + " statuses");
                 for (Status s : userTimeline) {

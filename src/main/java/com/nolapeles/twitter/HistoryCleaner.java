@@ -28,7 +28,7 @@ public class HistoryCleaner {
         }
 
         NLPTwitterToolbox toolbox = new NLPTwitterToolbox(f);
-        List<Status> statuses = toolbox.findTweets("stupid","things","you", "have", "said", "here");
+        List<Status> statuses = toolbox.findTweets("politics","mccain","bush","pence","Elizabeth","Warren","kaine","obama","trump","hrc","hillary","hilary","yemen","russia","putin","dnc","bernie","sanders","saudi","arabia","emirates","anonymous","wikileaks","assange","tpp","FreeAssange");
         System.out.println("Destroying " + statuses.size() + " tweets");
         toolbox.deleteTweets(statuses);
     }
