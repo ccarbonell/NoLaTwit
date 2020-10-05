@@ -99,7 +99,7 @@ public class NLPTwitterToolbox {
         // already
         toolbox.unfollowInactive();
         toolbox.followNewUsers(statuses);
-        toolbox.sendShoutout(statuses);
+        toolbox.sendFollowFridayShoutout(statuses);
         
         /**
         if (propfile.equals("twitter4j.properties.punsr")) {
@@ -108,49 +108,6 @@ public class NLPTwitterToolbox {
         */
        
     }
-
-    /**
-    private void followUEDPlayers() {
-        if (true) {
-            return; 
-        }
-        try {
-            List<StatusUpdate> tweets = new ArrayList<StatusUpdate>();
-            Query q = new Query("#ued");
-            q.setSinceId(0);
-            q.setResultType(Query.RECENT);
-            q.setCount(100);
-            q.setSince(since);
-            
-            
-            for (int page=1; page < 15; page++) {
-                q.setPage(page);
-                QueryResult result = twitter.search(q);
-                List<Tweet> tweets2 = result.getTweets();
-                tweets.addAll(tweets2);
-                result.getSinceId()
-            }
-
-            for (Tweet t : tweets) {
-                long userid;
-                if (!FRIENDS.contains(userid = t.getFromUserId()) && !t.getText().contains("- sp")) {
-                    try {
-                        System.out.println(SCREEN_NAME + " is Following #ued player @" + t.getFromUser());
-                        twitter.createFriendship(userid, true);
-                        FRIENDS.add(userid);
-                        saveFriends();
-                    } catch (TwitterException e) {
-                    }
-                }
-            }
-            
-        } catch (TwitterException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        
-    }
-    */
 
     /**
      * Unfollow users that have been inactive for 3 months.
@@ -235,7 +192,7 @@ public class NLPTwitterToolbox {
         return user;
     }
 
-    private void sendShoutout(List<Status> statuses) {
+    private void sendFollowFridayShoutout(List<Status> statuses) {
 
         if (!FOLLOW_FRIDAY_ON) {
             System.out.println("Follow friday turned off for " + SCREEN_NAME);
@@ -243,6 +200,9 @@ public class NLPTwitterToolbox {
         }
 
         boolean isFriday = Calendar.getInstance().get(Calendar.DAY_OF_WEEK) == Calendar.FRIDAY;
+        if (!isFriday) {
+            return;
+        }
 
         //TODO: Copy this code to generalize this pattern.
         //We're basically converting a list with repeated objects
@@ -495,13 +455,13 @@ public class NLPTwitterToolbox {
     }
 
     List<Status> findTweets(String... orKeywords) {
-        if (orKeywords == null || orKeywords.length == 0) {
-            return new ArrayList<Status>();
-        }
+        //if (orKeywords == null || orKeywords.length == 0) {
+         //   return new ArrayList<>();
+       // }
         List<Status> tweets = new ArrayList<Status>();
         try {
-            int page = 150;
-            while (page < 200) {
+            int page = 1;
+            while (page < 100) {
                 final ResponseList<Status> userTimeline = twitter.getUserTimeline(new Paging(page++, 100));
                 System.out.println("timeline contained " + userTimeline.size() + " statuses");
                 for (Status s : userTimeline) {

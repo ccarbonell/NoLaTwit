@@ -14,7 +14,7 @@ public class HistoryCleaner {
 
     public static void main(String[] args) throws IOException {
         if (args == null || args.length == 0) {
-            System.err.println("No Twitter Account property file given.");
+            System.err.println("Please try again. No Twitter account property file given.");
             return;
         }
         File f = new File(args[0]);
@@ -28,8 +28,8 @@ public class HistoryCleaner {
         }
 
         NLPTwitterToolbox toolbox = new NLPTwitterToolbox(f);
-        List<Status> statuses = toolbox.findTweets("politics","mccain","bush","pence","Elizabeth","Warren","kaine","obama","trump","hrc","hillary","hilary","yemen","russia","putin","dnc","bernie","sanders","saudi","arabia","emirates","anonymous","wikileaks","assange","tpp","FreeAssange");
-        System.out.println("Destroying " + statuses.size() + " tweets");
+        List<Status> statuses = toolbox.findTweets("harris");
+        System.out.println("found " + statuses.size() + " statues");
         toolbox.deleteTweets(statuses);
     }
 }
