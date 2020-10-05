@@ -18,6 +18,7 @@ public class NLPTwitterToolbox {
     private Twitter twitter;
 
     private boolean FOLLOW_FRIDAY_ON;
+    private boolean FOLLOW_MENTIONS;
 
     private Set<Long> FRIENDS;
     private Map<Long, User> STATUSES;
@@ -201,6 +202,7 @@ public class NLPTwitterToolbox {
 
         boolean isFriday = Calendar.getInstance().get(Calendar.DAY_OF_WEEK) == Calendar.FRIDAY;
         if (!isFriday) {
+            System.out.println("Follow friday aborted, not friday");
             return;
         }
 
@@ -299,6 +301,9 @@ public class NLPTwitterToolbox {
 
         String strFFProp = props.getProperty("followFriday").trim().toLowerCase();
         FOLLOW_FRIDAY_ON = (strFFProp.equals("1") || strFFProp.equals("true") || strFFProp.equals("on"));
+
+        String strFollowMentions = props.getProperty("followMentions");
+        FOLLOW_MENTIONS = strFollowMentions != null && (strFollowMentions.equals("1") || strFollowMentions.equals("true") || strFollowMentions.equals("on"));
     }
 
     private void initStatuses() {
@@ -427,6 +432,10 @@ public class NLPTwitterToolbox {
     }
 
     private void followNewUsers(List<Status> statuses) {
+        if (!FOLLOW_MENTIONS) {
+            System.out.println("followNewUsers() aborted, not followMentions=false");
+            return;
+        }
         for (Status status : statuses) {
             long userid;
 
