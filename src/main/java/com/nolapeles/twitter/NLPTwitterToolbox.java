@@ -6,11 +6,13 @@ import twitter4j.conf.ConfigurationBuilder;
 
 import java.io.*;
 import java.util.*;
+import java.util.function.*;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This class has several utilities to automate tasks related to your followers.
- * 
- * 
  **/
 public class NLPTwitterToolbox {
     private static final int MAX_TWEET_LENGTH = 140;
@@ -25,14 +27,19 @@ public class NLPTwitterToolbox {
 
     private long loadFriendCursor;
 
-    /** The property files we pass to the program are stored here. */
+    /**
+     * The property files we pass to the program are stored here.
+     */
     private Properties props;
 
-    /** The file where we serialize the IDs of the people we follow */
+    /**
+     * The file where we serialize the IDs of the people we follow
+     */
     private File fFriends;
 
-    /** The file where we serialize known friend statuses so we don't have to request these statuses
-     *  during the next 3 months.
+    /**
+     * The file where we serialize known friend statuses so we don't have to request these statuses
+     * during the next 3 months.
      */
     private File fStatuses;
 
@@ -44,12 +51,13 @@ public class NLPTwitterToolbox {
         }
 
         final Thread[] threads = new Thread[args.length];
-        int i=0;
+        int i = 0;
         for (final String propfile : args) {
             try {
                 threads[i] = new Thread(() -> {
                     try {
-                        serviceAccount(propfile);
+                        getResponsesToTweets(propfile, new long[]{1334609940627984387l, 1334194103572078592l});
+                        //serviceAccount(propfile);
                     } catch (Exception e) {
                         System.out.println("Failed servicing account " + propfile);
                         e.printStackTrace();
@@ -76,6 +84,7 @@ public class NLPTwitterToolbox {
      * Takes the name of a twitter4j.prop file and performs on the account for that property file:
      * > follow back new users that have mentioned us recently.
      * > follow friday (if it's a friday)
+     *
      * @param propfile
      */
     public static void serviceAccount(String propfile) throws Exception {
@@ -86,7 +95,7 @@ public class NLPTwitterToolbox {
         }
 
         NLPTwitterToolbox toolbox = new NLPTwitterToolbox(properties);
-        
+
         // get all the latest mentions to us, and let's play with this.
         List<Status> statuses = null;
         try {
@@ -101,13 +110,12 @@ public class NLPTwitterToolbox {
         toolbox.unfollowInactive();
         toolbox.followNewUsers(statuses);
         toolbox.sendFollowFridayShoutout(statuses);
-        
+
         /**
-        if (propfile.equals("twitter4j.properties.punsr")) {
-            toolbox.followUEDPlayers();
-        }
-        */
-       
+         if (propfile.equals("twitter4j.properties.punsr")) {
+         toolbox.followUEDPlayers();
+         }
+         */
     }
 
     /**
@@ -285,7 +293,7 @@ public class NLPTwitterToolbox {
     }
 
     private void loadProperties(File propertyFile) throws Exception {
-        String[] expectedPropertyKeys = new String[] { "debug", "oauth.consumerKey", "oauth.consumerSecret", "oauth.accessToken", "oauth.accessTokenSecret", "username", "followFriday" };
+        String[] expectedPropertyKeys = new String[]{"debug", "oauth.consumerKey", "oauth.consumerSecret", "oauth.accessToken", "oauth.accessTokenSecret", "username", "followFriday"};
 
         props = new Properties();
         props.load(new FileInputStream(propertyFile));
@@ -311,7 +319,9 @@ public class NLPTwitterToolbox {
         loadStatuses();
     }
 
-    /** This will load the statuses from disk */
+    /**
+     * This will load the statuses from disk
+     */
     @SuppressWarnings("unchecked")
     private void loadStatuses() {
         if (!fStatuses.exists() || fStatuses.length() == 0) {
@@ -379,7 +389,9 @@ public class NLPTwitterToolbox {
         }
     }
 
-    /** Serializes the Twitter IDs of friends into a file. */
+    /**
+     * Serializes the Twitter IDs of friends into a file.
+     */
     private void saveFriends() {
         ObjectOutputStream oos = null;
         FileOutputStream fos = null;
@@ -465,8 +477,8 @@ public class NLPTwitterToolbox {
 
     List<Status> findTweets(String... orKeywords) {
         //if (orKeywords == null || orKeywords.length == 0) {
-         //   return new ArrayList<>();
-       // }
+        //   return new ArrayList<>();
+        // }
         List<Status> tweets = new ArrayList<Status>();
         try {
             int page = 1;
@@ -500,15 +512,57 @@ public class NLPTwitterToolbox {
         if (statuses == null || statuses.size() == 0) {
             return;
         }
-        int i=1;
+        int i = 1;
         for (Status status : statuses) {
             try {
                 twitter.destroyStatus(status.getId());
-                System.out.println("Destroyed("+i+"): ["+status.getId()+"] " + status.getText());
+                System.out.println("Destroyed(" + i + "): [" + status.getId() + "] " + status.getText());
                 i++;
             } catch (TwitterException e) {
                 e.printStackTrace();
             }
         }
+    }
+
+    /**
+     * Given a list of tweet ids, parses the mention stream to the sender's account whenever the
+     * status are responding to any of the matching tweet ids.
+     */
+    public static List<Status> getResponsesToTweets(String propfile, long[] tweetsBeingRespondedTo) {
+        File properties = new File(propfile);
+        if (!properties.exists() || !properties.isFile() || !properties.canRead()) {
+            System.out.println("ERROR: " + propfile + " is not a valid twitter4j.propertis file.\n");
+        }
+
+        NLPTwitterToolbox toolbox = new NLPTwitterToolbox(properties);
+
+        try {
+
+
+            int processed = 0;
+            Paging paging = new Paging(1, 200);
+            ResponseList<Status> mentions = toolbox.twitter.getMentionsTimeline(paging);
+            List<Status> results = new ArrayList<>();
+            while (mentions.size() > 0 && processed < 20000) {
+                mentions.stream().
+                        filter(s ->
+                                Arrays.stream(tweetsBeingRespondedTo).anyMatch(
+                                        value -> s.getInReplyToStatusId() == value)).
+                        forEach(s ->
+                        {
+                            System.out.println(s.getText());
+                            results.add(s);
+                        });
+                paging.setPage(paging.getPage() + 1);
+                processed += mentions.size();
+                toolbox.twitter.getMentionsTimeline(paging);
+            }
+            System.out.println("Total API Calls: " + paging);
+            System.out.println("Total Processed Tweets: " + processed);
+            return results;
+        } catch (TwitterException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

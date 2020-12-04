@@ -19,16 +19,16 @@ public class HistoryCleaner {
         }
         File f = new File(args[0]);
         if (!f.isFile()) {
-            System.err.println("<"+args[0]+"> is not a file." );
+            System.err.println("<" + args[0] + "> is not a file.");
         }
 
         if (!f.exists()) {
-            System.err.println("File <"+args[0]+"> does not exist");
+            System.err.println("File <" + args[0] + "> does not exist");
             return;
         }
 
         NLPTwitterToolbox toolbox = new NLPTwitterToolbox(f);
-        List<Status> statuses = toolbox.findTweets("harris");
+        List<Status> statuses = toolbox.findTweets("harris", "trump", "biden", "antifa", "marxists","bernie","blm","supremacists","proud boys","covid");
         System.out.println("found " + statuses.size() + " statues");
         toolbox.deleteTweets(statuses);
     }
