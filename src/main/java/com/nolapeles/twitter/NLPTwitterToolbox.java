@@ -537,20 +537,33 @@ public class NLPTwitterToolbox {
         NLPTwitterToolbox toolbox = new NLPTwitterToolbox(properties);
 
         try {
-
-
+            HashMap<Long, Integer> suggestionSentBy = new HashMap<>();
             int processed = 0;
             Paging paging = new Paging(1, 200);
             ResponseList<Status> mentions = toolbox.twitter.getMentionsTimeline(paging);
             List<Status> results = new ArrayList<>();
             while (mentions.size() > 0 && processed < 20000) {
                 mentions.stream().
-                        filter(s ->
-                                Arrays.stream(tweetsBeingRespondedTo).anyMatch(
-                                        value -> s.getInReplyToStatusId() == value)).
+                        filter(s -> {
+                            long senderId = s.getUser().getId();
+                            if (suggestionSentBy.containsKey(senderId)) {
+                                suggestionSentBy.put(senderId, 1 + suggestionSentBy.get(senderId));
+                            } else {
+                                suggestionSentBy.put(senderId, 1);
+                            }
+                            if (suggestionSentBy.get(senderId) > 3) {
+                                return false;
+                            }
+                            return Arrays.stream(tweetsBeingRespondedTo).anyMatch(
+                                    targetTweetId -> s.getInReplyToStatusId() == targetTweetId);
+                        }).
                         forEach(s ->
                         {
-                            System.out.println(s.getText());
+                            try {
+                                System.out.println(s.getText().replace("@" + toolbox.twitter.getScreenName(),""));
+                            } catch (TwitterException e) {
+                                e.printStackTrace();
+                            }
                             results.add(s);
                         });
                 paging.setPage(paging.getPage() + 1);
