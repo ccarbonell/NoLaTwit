@@ -1,0 +1,25 @@
+group 'com.nolapeles'
+version '1.0-SNAPSHOT'
+
+apply plugin: 'java'
+apply plugin: 'application'
+
+repositories {
+    mavenCentral()
+    maven {
+        url 'https://jitpack.io'
+    }
+}
+
+dependencies {
+    compile "org.twitter4j:twitter4j-core:4.0.7"
+    implementation 'com.github.instagram4j:instagram4j:develop-SNAPSHOT'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src/main/java'
+        }
+    }
+}
