@@ -6,10 +6,6 @@ import twitter4j.conf.ConfigurationBuilder;
 
 import java.io.*;
 import java.util.*;
-import java.util.function.*;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * This class has several utilities to automate tasks related to your followers.
@@ -56,8 +52,8 @@ public class NLPTwitterToolbox {
             try {
                 threads[i] = new Thread(() -> {
                     try {
-                        getResponsesToTweets(propfile, new long[]{1334609940627984387l, 1334194103572078592l});
-                        //serviceAccount(propfile);
+                        //getResponsesToTweets(propfile, new long[]{1334609940627984387l, 1334194103572078592l});
+                        serviceAccount(propfile);
                     } catch (Exception e) {
                         System.out.println("Failed servicing account " + propfile);
                         e.printStackTrace();
@@ -108,7 +104,7 @@ public class NLPTwitterToolbox {
         // Follow back those that mentioned you, if you're not following them
         // already
         toolbox.unfollowInactive();
-        toolbox.followNewUsers(statuses);
+        toolbox.tryFollowNewUsers(statuses);
         toolbox.sendFollowFridayShoutout(statuses);
 
         /**
@@ -443,7 +439,8 @@ public class NLPTwitterToolbox {
         twitter.verifyCredentials();
     }
 
-    private void followNewUsers(List<Status> statuses) {
+    /** Won't follow if FOLLOW_MENTIONS=false */
+    private void tryFollowNewUsers(List<Status> statuses) {
         if (!FOLLOW_MENTIONS) {
             System.out.println("followNewUsers() aborted, not followMentions=false");
             return;
@@ -560,20 +557,22 @@ public class NLPTwitterToolbox {
                         forEach(s ->
                         {
                             try {
-                                System.out.println(s.getText().replace("@" + toolbox.twitter.getScreenName(),""));
+                                System.out.println(s.getText().toLowerCase().replace("@" + toolbox.twitter.getScreenName().toLowerCase(),""));
                             } catch (TwitterException e) {
                                 e.printStackTrace();
                             }
                             results.add(s);
                         });
                 paging.setPage(paging.getPage() + 1);
+                System.out.println("== Page " + paging.getPage() + " ==================================");
                 processed += mentions.size();
+                Thread.sleep(5000);
                 toolbox.twitter.getMentionsTimeline(paging);
             }
             System.out.println("Total API Calls: " + paging);
             System.out.println("Total Processed Tweets: " + processed);
             return results;
-        } catch (TwitterException e) {
+        } catch (TwitterException | InterruptedException e) {
             e.printStackTrace();
         }
         return null;
