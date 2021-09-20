@@ -6,6 +6,8 @@ import twitter4j.conf.ConfigurationBuilder;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This class has several utilities to automate tasks related to your followers.
@@ -439,7 +441,9 @@ public class NLPTwitterToolbox {
         twitter.verifyCredentials();
     }
 
-    /** Won't follow if FOLLOW_MENTIONS=false */
+    /**
+     * Won't follow if FOLLOW_MENTIONS=false
+     */
     private void tryFollowNewUsers(List<Status> statuses) {
         if (!FOLLOW_MENTIONS) {
             System.out.println("followNewUsers() aborted, not followMentions=false");
@@ -557,7 +561,7 @@ public class NLPTwitterToolbox {
                         forEach(s ->
                         {
                             try {
-                                System.out.println(s.getText().toLowerCase().replace("@" + toolbox.twitter.getScreenName().toLowerCase(),""));
+                                System.out.println(s.getText().toLowerCase().replace("@" + toolbox.twitter.getScreenName().toLowerCase(), ""));
                             } catch (TwitterException e) {
                                 e.printStackTrace();
                             }
@@ -576,5 +580,37 @@ public class NLPTwitterToolbox {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public Status getTweet(long statusID) {
+        try {
+            return twitter.showStatus(statusID);
+        } catch (TwitterException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /** Given a Tweet created by OUR user, it returns a list of replies
+     * It does this by performing a search using to:us since_id:<id_of_tweet> then
+     * filtering out the mentions that are in response to the given tweet id.
+     * */
+    public List<Status> getRepliesToMyTweet(Status tweet, int maxReplies) {
+        List<Status> tweets = new ArrayList<>();
+        try {
+            Query query = new Query("to:" + SCREEN_NAME + " since_id:" + String.valueOf(tweet.getId()));
+            QueryResult queryResult;
+            do {
+                queryResult = twitter.search(query);
+                List<Status> responses = queryResult.getTweets();
+                Stream<Status> stream = responses.stream();
+                List<Status> filtered = stream.filter(s -> s.getInReplyToStatusId() == tweet.getId()).collect(Collectors.toList());
+                tweets.addAll(filtered);
+            } while ((query = queryResult.nextQuery()) != null && tweets.size() < maxReplies);
+            return tweets;
+        } catch (TwitterException e) {
+            e.printStackTrace();
+            return tweets;
+        }
     }
 }
