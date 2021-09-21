@@ -613,4 +613,8 @@ public class NLPTwitterToolbox {
             return tweets;
         }
     }
+
+    public String getScreenNameLowercase() {
+        return SCREEN_NAME.toLowerCase(Locale.ROOT);
+    }
 }
