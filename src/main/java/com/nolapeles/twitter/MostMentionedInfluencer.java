@@ -7,23 +7,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class MostMentionedInfluencer {
-    static List<String> getStringLines(File f) throws IOException {
-        ArrayList<String> result = new ArrayList<>();
-        Scanner scanner = new Scanner(f);
-        while (scanner.hasNextLine()) {
-            result.add(scanner.nextLine().trim());
-        }
-        scanner.close();
-        return result;
-    }
-
     static int totalMentions = 0;
     static int influencerCount = 0;
 
     public static void main(String[] args) throws IOException {
         Pattern tweep = Pattern.compile("(@[a-zA-Z0-9_]+)");
         HashMap<String, Integer> histogram = new HashMap<>();
-        getStringLines(new File("src/main/resources/replies.txt")).
+        Utils.getStringLines(new File("src/main/resources/replies.txt")).
                 forEach(s -> {
                     Matcher matcher = tweep.matcher(s);
                     while (matcher.find()) {
