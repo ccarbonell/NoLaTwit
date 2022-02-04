@@ -1,0 +1,1 @@
+./gradlew run --args=twitter4j.properties.diariobitcoin
