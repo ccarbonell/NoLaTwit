@@ -68,13 +68,13 @@ public class NLPTwitterToolbox {
             }
         }
 
-        for (Thread t : threads) {
+        Arrays.stream(threads).parallel().forEach(t -> {
             try {
                 t.join();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-        }
+        });
         System.out.println("Waiting for all threads to finish.");
     }
 
