@@ -49,10 +49,10 @@ public class NLPTwitterToolbox {
         }
 
         final Thread[] threads = new Thread[args.length];
-        int i = 0;
-        for (final String propfile : args) {
+        final int[] i = {0};
+        Arrays.stream(args).forEach(propfile -> {
             try {
-                threads[i] = new Thread(() -> {
+                threads[i[0]] = new Thread(() -> {
                     try {
                         //getResponsesToTweets(propfile, new long[]{1334609940627984387l, 1334194103572078592l});
                         serviceAccount(propfile);
@@ -61,12 +61,11 @@ public class NLPTwitterToolbox {
                         e.printStackTrace();
                     }
                 });
-                threads[i].start();
-                i++;
-            } catch (Exception e) {
-                continue;
+                threads[i[0]].start();
+                i[0]++;
+            } catch (Exception ignored) {
             }
-        }
+        });
 
         Arrays.stream(threads).parallel().forEach(t -> {
             try {
@@ -591,10 +590,11 @@ public class NLPTwitterToolbox {
         }
     }
 
-    /** Given a Tweet created by OUR user, it returns a list of replies
+    /**
+     * Given a Tweet created by OUR user, it returns a list of replies
      * It does this by performing a search using to:us since_id:<id_of_tweet> then
      * filtering out the mentions that are in response to the given tweet id.
-     * */
+     */
     public List<Status> getRepliesToMyTweet(Status tweet, int maxReplies) {
         List<Status> tweets = new ArrayList<>();
         try {
