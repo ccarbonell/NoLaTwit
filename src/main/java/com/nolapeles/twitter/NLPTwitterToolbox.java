@@ -13,7 +13,7 @@ import java.util.stream.Stream;
  * This class has several utilities to automate tasks related to your followers.
  **/
 public class NLPTwitterToolbox {
-    private static final int MAX_TWEET_LENGTH = 140;
+    private static final int MAX_TWEET_LENGTH = 280;
     private String SCREEN_NAME;
     private Twitter twitter;
 
@@ -228,11 +228,7 @@ public class NLPTwitterToolbox {
             }
         }
 
-        Collections.sort(usersToRecommend, new Comparator<User>() {
-            public int compare(User u1, User u2) {
-                return userInteractions.get(u2) - userInteractions.get(u1);
-            }
-        });
+        Collections.sort(usersToRecommend, (u1, u2) -> userInteractions.get(u2) - userInteractions.get(u1));
 
         //Now start preparing the twitts with the users, recommend the best ones first.
         List<String> tweets = new ArrayList<String>();
