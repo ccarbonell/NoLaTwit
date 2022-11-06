@@ -1,0 +1,7 @@
+debug=true
+oauth.consumerKey=
+oauth.consumerSecret=
+oauth.accessToken=
+oauth.accessTokenSecret=
+username=
+followFriday=1|true|True|0|false|False|On|on|Off|off
