@@ -1,10 +1,13 @@
 package com.nolapeles.twitter;
 
 import twitter4j.*;
-import twitter4j.conf.Configuration;
-import twitter4j.conf.ConfigurationBuilder;
+import twitter4j.v1.*;
 
 import java.io.*;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.chrono.ChronoLocalDate;
+import java.time.temporal.TemporalAccessor;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -80,7 +83,6 @@ public class NLPTwitterToolbox {
      * Takes the name of a twitter4j.prop file and performs on the account for that property file:
      * > follow back new users that have mentioned us recently.
      * > follow friday (if it's a friday)
-     *
      */
     public static void serviceAccount(String propfile) {
         File properties = new File(propfile);
@@ -113,8 +115,9 @@ public class NLPTwitterToolbox {
     private void unfollowInactive() {
         Iterator<Long> iterator = FRIENDS.iterator();
 
-        Calendar threeMonthsAgo = Calendar.getInstance();
-        threeMonthsAgo.add(Calendar.MONTH, -3);
+        Calendar threeMonthsAgoCal = Calendar.getInstance();
+        threeMonthsAgoCal.add(Calendar.MONTH, -3);
+        LocalDateTime threeMonthsAgoLocalDateTime = threeMonthsAgoCal.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
 
         while (iterator.hasNext()) {
             Long friendId = iterator.next();
@@ -126,8 +129,7 @@ public class NLPTwitterToolbox {
                 //to update and see if it's worth it not following this guy, otherwise, if we know he's
                 //been active, we don't need to get the latest status.
                 User friend = getUser(friendId);
-
-                if (friend != null && friend.getStatus() != null && friend.getStatus().getCreatedAt().before(threeMonthsAgo.getTime())) {
+                if (friend != null && friend.getStatus() != null && friend.getStatus().getCreatedAt().isBefore(threeMonthsAgoLocalDateTime)) {
                     iterator.remove();
                     unfollow(friend);
 
@@ -150,7 +152,7 @@ public class NLPTwitterToolbox {
     }
 
     private void unfollow(long id) throws TwitterException {
-        twitter.destroyFriendship(id);
+        twitter.v1().friendsFollowers().destroyFriendship(id);
         FRIENDS.remove(id);
         STATUSES.remove(id);
         saveStatuses();
@@ -160,17 +162,18 @@ public class NLPTwitterToolbox {
     private User getUser(Long friendId) {
         User user = STATUSES.get(friendId);
 
-        Calendar threeMonthsAgo = Calendar.getInstance();
-        threeMonthsAgo.add(Calendar.MONTH, -3);
+        Calendar threeMonthsAgoCal = Calendar.getInstance();
+        threeMonthsAgoCal.add(Calendar.MONTH, -3);
+        LocalDateTime threeMonthsAgoLocalDateTime = threeMonthsAgoCal.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
 
-        if (user != null && user.getStatus() != null && user.getStatus().getCreatedAt().after(threeMonthsAgo.getTime())) {
+        if (user != null && user.getStatus() != null && user.getStatus().getCreatedAt().isAfter(threeMonthsAgoLocalDateTime)) {
             //System.out.println("Got user @" + user.getScreenName() + " from disk.");
             return user;
         }
 
         // last resort, ask twitter about this guy.
         try {
-            user = twitter.showUser(friendId);
+            user = twitter.v1().users().showUser(friendId);
         } catch (TwitterException e) {
             return null;
         }
@@ -178,7 +181,7 @@ public class NLPTwitterToolbox {
         STATUSES.put(friendId, user);
 
         /*
-         * Possible Disk Bottle Neck, fix it when it happens. 
+         * Possible Disk Bottle Neck, fix it when it happens.
          * Doing this now to ensure we keep user statuses even if the program
          * stops during a run, so we don't have to use another twitter request
          * for the same data on the next run.
@@ -245,7 +248,7 @@ public class NLPTwitterToolbox {
         for (String tweet : tweets) {
             try {
                 //System.out.println("Will send: " + tweet);
-                twitter.updateStatus(tweet);
+                twitter.v1().tweets().updateStatus(tweet);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -403,7 +406,7 @@ public class NLPTwitterToolbox {
 
     private boolean getNextFriendsIDs() {
         try {
-            IDs friendsIDs = twitter.getFriendsIDs(SCREEN_NAME, loadFriendCursor);
+            IDs friendsIDs = twitter.v1().friendsFollowers().getFriendsIDs(SCREEN_NAME, loadFriendCursor);
             long[] iDs = friendsIDs.getIDs();
             for (long lid : iDs) {
                 FRIENDS.add(lid);
@@ -416,12 +419,11 @@ public class NLPTwitterToolbox {
     }
 
     private void initTwitter() throws TwitterException {
-        Configuration configuration = new ConfigurationBuilder().setOAuthConsumerKey(props.getProperty("oauth.consumerKey")).setOAuthConsumerSecret(props.getProperty("oauth.consumerSecret"))
-                .setOAuthAccessToken(props.getProperty("oauth.accessToken")).setOAuthAccessTokenSecret(props.getProperty("oauth.accessTokenSecret")).build();
-
-        twitter = new TwitterFactory(configuration).getInstance();
-        System.out.println("Verifying credentials for " + props.getProperty("username"));
-        twitter.verifyCredentials();
+        twitter = Twitter.newBuilder()
+                .oAuthConsumer(props.getProperty("oauth.consumerKey"), props.getProperty("oauth.consumerSecret"))
+                .oAuthAccessToken(props.getProperty("oauth.accessToken"), props.getProperty("oauth.accessTokenSecret"))
+                .build();
+        twitter.v1().users().verifyCredentials();
     }
 
     /**
@@ -443,7 +445,7 @@ public class NLPTwitterToolbox {
             if (!FRIENDS.contains(userid = status.getUser().getId())) {
                 try {
                     System.out.println(SCREEN_NAME + " is Following @" + status.getUser().getScreenName());
-                    twitter.createFriendship(userid, true);
+                    twitter.v1().friendsFollowers().createFriendship(userid, true);
                     FRIENDS.add(userid);
                 } catch (TwitterException ignored) {
                 }
@@ -453,9 +455,8 @@ public class NLPTwitterToolbox {
     }
 
     private List<Status> getMentions() throws TwitterException {
-        Paging paging = new Paging();
-        paging.setCount(100);
-        return twitter.getMentionsTimeline(paging);
+        Paging paging = Paging.ofCount(100);
+        return twitter.v1().timelines().getMentionsTimeline().stream().toList();
     }
 
     List<Status> findTweets(String... orKeywords) {
@@ -466,7 +467,8 @@ public class NLPTwitterToolbox {
         try {
             int page = 1;
             while (page < 100) {
-                final ResponseList<Status> userTimeline = twitter.getUserTimeline(new Paging(page++, 100));
+                ResponseList<Status> userTimeline = twitter.v1().timelines().getUserTimeline();
+                List<Status> statuses = userTimeline.subList(page++, page + 100);
                 System.out.println("timeline contained " + userTimeline.size() + " statuses");
                 for (Status s : userTimeline) {
                     if (anyKeyWordIn(s.getText(), orKeywords)) {
@@ -498,7 +500,7 @@ public class NLPTwitterToolbox {
         int i = 1;
         for (Status status : statuses) {
             try {
-                twitter.destroyStatus(status.getId());
+                twitter.v1().tweets().destroyStatus(status.getId());
                 System.out.println("Destroyed(" + i + "): [" + status.getId() + "] " + status.getText());
                 i++;
             } catch (TwitterException e) {
@@ -522,8 +524,8 @@ public class NLPTwitterToolbox {
         try {
             HashMap<Long, Integer> suggestionSentBy = new HashMap<>();
             int processed = 0;
-            Paging paging = new Paging(1, 200);
-            ResponseList<Status> mentions = toolbox.twitter.getMentionsTimeline(paging);
+            Paging paging = Paging.ofCount(200);
+            ResponseList<Status> mentions = toolbox.twitter.v1().timelines().getMentionsTimeline(paging);
             List<Status> results = new ArrayList<>();
             while (mentions.size() > 0 && processed < 20000) {
                 mentions.stream().
@@ -543,17 +545,17 @@ public class NLPTwitterToolbox {
                         forEach(s ->
                         {
                             try {
-                                System.out.println(s.getText().toLowerCase().replace("@" + toolbox.twitter.getScreenName().toLowerCase(), ""));
+                                System.out.println(s.getText().toLowerCase().replace("@" + toolbox.twitter.v1().users().verifyCredentials().getScreenName().toLowerCase(), ""));
                             } catch (TwitterException e) {
                                 e.printStackTrace();
                             }
                             results.add(s);
                         });
-                paging.setPage(paging.getPage() + 1);
-                System.out.println("== Page " + paging.getPage() + " ==================================");
+                paging = Paging.ofPage(paging.page + 1);
+                System.out.println("== Page " + paging.page + " ==================================");
                 processed += mentions.size();
                 Thread.sleep(5000);
-                toolbox.twitter.getMentionsTimeline(paging);
+                toolbox.twitter.v1().timelines().getMentionsTimeline(paging);
             }
             System.out.println("Total API Calls: " + paging);
             System.out.println("Total Processed Tweets: " + processed);
@@ -566,7 +568,7 @@ public class NLPTwitterToolbox {
 
     public Status getTweet(long statusID) {
         try {
-            return twitter.showStatus(statusID);
+            return twitter.v1().tweets().showStatus(statusID);
         } catch (TwitterException e) {
             e.printStackTrace();
             return null;
@@ -581,10 +583,10 @@ public class NLPTwitterToolbox {
     public List<Status> getRepliesToMyTweet(Status tweet, int maxReplies) {
         List<Status> tweets = new ArrayList<>();
         try {
-            Query query = new Query("to:" + SCREEN_NAME + " since_id:" + tweet.getId());
+            Query query = Query.of("to:" + SCREEN_NAME + " since_id:" + tweet.getId());
             QueryResult queryResult;
             do {
-                queryResult = twitter.search(query);
+                queryResult = twitter.v1().search().search(query);;
                 List<Status> responses = queryResult.getTweets();
                 Stream<Status> stream = responses.stream();
                 List<Status> filtered = stream.filter(s -> s.getInReplyToStatusId() == tweet.getId()).toList();

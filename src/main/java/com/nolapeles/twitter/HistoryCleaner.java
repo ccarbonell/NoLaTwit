@@ -1,6 +1,6 @@
 package com.nolapeles.twitter;
 
-import twitter4j.Status;
+import twitter4j.v1.Status;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,7 +12,7 @@ import java.util.List;
  */
 public class HistoryCleaner {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         if (args == null || args.length == 0) {
             System.err.println("Please try again. No Twitter account property file given.");
             return;

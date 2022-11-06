@@ -1,6 +1,6 @@
 package com.nolapeles.twitter;
 
-import twitter4j.Status;
+import twitter4j.v1.Status;
 
 import java.io.*;
 import java.util.*;

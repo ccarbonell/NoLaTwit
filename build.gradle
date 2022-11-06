@@ -12,9 +12,9 @@ repositories {
 }
 
 dependencies {
-    implementation "org.twitter4j:twitter4j-core:4.0.7"
-    implementation "org.twitter4j:twitter4j-async:4.0.7"
-    implementation "org.twitter4j:twitter4j-stream:4.0.7"
+    implementation 'org.twitter4j:twitter4j-core:4.1.2'
+//    implementation "org.twitter4j:twitter4j-async:4.0.7"
+//    implementation "org.twitter4j:twitter4j-stream:4.0.7"
     implementation 'com.github.instagram4j:instagram4j:2.0.7'
 }
 
