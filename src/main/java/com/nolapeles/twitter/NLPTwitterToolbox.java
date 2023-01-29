@@ -123,16 +123,11 @@ public class NLPTwitterToolbox {
             Long friendId = iterator.next();
 
             try {
-
-                //unfollow inactive, get user out of FRIENDS.
-                //TODO: Save statuses here. Whenever the saved status is too old, then we check again
-                //to update and see if it's worth it not following this guy, otherwise, if we know he's
-                //been active, we don't need to get the latest status.
                 User friend = getUser(friendId);
-                if (friend != null && friend.getStatus() != null && friend.getStatus().getCreatedAt().isBefore(threeMonthsAgoLocalDateTime)) {
+                if (friend != null && friend.getStatus() != null &&
+                        friend.getStatus().getCreatedAt().isBefore(threeMonthsAgoLocalDateTime)) {
                     iterator.remove();
                     unfollow(friend);
-
                     System.out.println("@" + SCREEN_NAME + " unfollows inactive @" + friend.getScreenName() + " Last Tweet was on [" + friend.getStatus().getCreatedAt() + "]");
                 }
             } catch (Exception e) {
@@ -143,8 +138,6 @@ public class NLPTwitterToolbox {
                 e.printStackTrace();
             }
         }
-
-        saveFriends();
     }
 
     private void unfollow(User friend) throws TwitterException {
@@ -586,7 +579,8 @@ public class NLPTwitterToolbox {
             Query query = Query.of("to:" + SCREEN_NAME + " since_id:" + tweet.getId());
             QueryResult queryResult;
             do {
-                queryResult = twitter.v1().search().search(query);;
+                queryResult = twitter.v1().search().search(query);
+                ;
                 List<Status> responses = queryResult.getTweets();
                 Stream<Status> stream = responses.stream();
                 List<Status> filtered = stream.filter(s -> s.getInReplyToStatusId() == tweet.getId()).toList();
